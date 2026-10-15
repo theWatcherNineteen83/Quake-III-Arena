@@ -435,32 +435,69 @@ weightconfig_t *ReadWeightConfig(char *filename)
 	//
 	return config;
 } //end of the function ReadWeightConfig
-#if 0
 //===========================================================================
-//
-// Parameter:				-
-// Returns:					-
-// Changes Globals:		-
+// 2026-10-15 Prometheus/GSM: reactivated weight config writer.
+// The original 1999 implementation used raw fopen()/fprintf() with QPaths,
+// which does not fit the engine file system (pak archives + search paths).
+// Rewritten to use botimport.FS_FOpenFile(FS_WRITE) + FS_Write(), following
+// the proven pattern of AAS_WriteAASFile() (be_aas_file.c) and the route
+// cache writer (be_aas_route.c). Output format is byte-compatible with
+// ReadWeightConfig(): weight "name" { switch(idx) { case n: return ...; } }
+// WriteIndent()/WriteFloat() from l_struct.c work on FILE*, so these writers
+// format into a small buffer first and flush it through FS_Write.
 //===========================================================================
-qboolean WriteFuzzyWeight(FILE *fp, fuzzyseperator_t *fs)
+#define WEIGHTWRITE_BUFSIZE 256
+
+static qboolean WriteBuf(fileHandle_t fp, char *buf, int n)
 {
+	if (n <= 0 || n >= WEIGHTWRITE_BUFSIZE) return qfalse;
+	if (botimport.FS_Write(buf, n, fp) != n) return qfalse;
+	return qtrue;
+} //end of the function WriteBuf
+//===========================================================================
+static int WriteFloatStr(char *dst, int maxsize, float value)
+{
+	char num[128];
+	int l;
+
+	snprintf(num, sizeof(num), "%f", value);
+	l = strlen(num);
+	//strip any trailing zeros like WriteFloat() in l_struct.c
+	while(l-- > 1)
+	{
+		if (num[l] != '0' && num[l] != '.') break;
+		if (num[l] == '.') { num[l] = 0; break; }
+		num[l] = 0;
+	} //end while
+	l = strlen(num);
+	if (l >= maxsize) l = maxsize - 1;
+	memcpy(dst, num, l);
+	return l;
+} //end of the function WriteFloatStr
+//===========================================================================
+qboolean WriteFuzzyWeight(fileHandle_t fp, fuzzyseperator_t *fs)
+{
+	char buf[WEIGHTWRITE_BUFSIZE];
+	int n, m;
+
+	n = 0;
 	if (fs->type == WT_BALANCE)
 	{
-		if (fprintf(fp, " return balance(") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->weight)) return qfalse;
-		if (fprintf(fp, ",") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->minweight)) return qfalse;
-		if (fprintf(fp, ",") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->maxweight)) return qfalse;
-		if (fprintf(fp, ");\n") < 0) return qfalse;
+		memcpy(buf+n, " return balance(", 16); n += 16;
+		m = WriteFloatStr(buf+n, sizeof(buf)-n-1, fs->weight); n += m;
+		buf[n++] = ',';
+		m = WriteFloatStr(buf+n, sizeof(buf)-n-1, fs->minweight); n += m;
+		buf[n++] = ',';
+		m = WriteFloatStr(buf+n, sizeof(buf)-n-1, fs->maxweight); n += m;
+		memcpy(buf+n, ");\n", 3); n += 3;
 	} //end if
 	else
 	{
-		if (fprintf(fp, " return ") < 0) return qfalse;
-		if (!WriteFloat(fp, fs->weight)) return qfalse;
-		if (fprintf(fp, ";\n") < 0) return qfalse;
+		memcpy(buf+n, " return ", 8); n += 8;
+		m = WriteFloatStr(buf+n, sizeof(buf)-n-1, fs->weight); n += m;
+		memcpy(buf+n, ";\n", 2); n += 2;
 	} //end else
-	return qtrue;
+	return WriteBuf(fp, buf, n);
 } //end of the function WriteFuzzyWeight
 //===========================================================================
 //
@@ -468,38 +505,55 @@ qboolean WriteFuzzyWeight(FILE *fp, fuzzyseperator_t *fs)
 // Returns:					-
 // Changes Globals:		-
 //===========================================================================
-qboolean WriteFuzzySeperators_r(FILE *fp, fuzzyseperator_t *fs, int indent)
+qboolean WriteFuzzySeperators_r(fileHandle_t fp, fuzzyseperator_t *fs, int indent)
 {
-	if (!WriteIndent(fp, indent)) return qfalse;
-	if (fprintf(fp, "switch(%d)\n", fs->index) < 0) return qfalse;
-	if (!WriteIndent(fp, indent)) return qfalse;
-	if (fprintf(fp, "{\n") < 0) return qfalse;
+	char buf[WEIGHTWRITE_BUFSIZE];
+	int i, n;
+
+	for (i = 0; i < indent; i++) buf[i] = '\t';
+	buf[i] = 0;
+	if (!WriteBuf(fp, buf, indent)) return qfalse;
+	n = sprintf(buf, "switch(%d)\n", fs->index);
+	if (n <= 0 || n >= WEIGHTWRITE_BUFSIZE) return qfalse;
+	if (!WriteBuf(fp, buf, n)) return qfalse;
+	for (i = 0; i < indent; i++) buf[i] = '\t';
+	buf[i] = 0;
+	if (!WriteBuf(fp, buf, indent)) return qfalse;
+	if (!WriteBuf(fp, "{\n", 2)) return qfalse;
 	indent++;
 	do
 	{
-		if (!WriteIndent(fp, indent)) return qfalse;
+		for (i = 0; i < indent; i++) buf[i] = '\t';
+		buf[i] = 0;
+		if (!WriteBuf(fp, buf, indent)) return qfalse;
 		if (fs->next)
 		{
-			if (fprintf(fp, "case %d:", fs->value) < 0) return qfalse;
+			n = sprintf(buf, "case %d:", fs->value);
+			if (n <= 0 || n >= WEIGHTWRITE_BUFSIZE) return qfalse;
+			if (!WriteBuf(fp, buf, n)) return qfalse;
 		} //end if
 		else
 		{
-			if (fprintf(fp, "default:") < 0) return qfalse;
+			if (!WriteBuf(fp, "default:", 8)) return qfalse;
 		} //end else
 		if (fs->child)
 		{
-			if (fprintf(fp, "\n") < 0) return qfalse;
-			if (!WriteIndent(fp, indent)) return qfalse;
-			if (fprintf(fp, "{\n") < 0) return qfalse;
+			if (!WriteBuf(fp, "\n", 1)) return qfalse;
+			for (i = 0; i < indent; i++) buf[i] = '\t';
+			buf[i] = 0;
+			if (!WriteBuf(fp, buf, indent)) return qfalse;
+			if (!WriteBuf(fp, "{\n", 2)) return qfalse;
 			if (!WriteFuzzySeperators_r(fp, fs->child, indent + 1)) return qfalse;
-			if (!WriteIndent(fp, indent)) return qfalse;
+			for (i = 0; i < indent; i++) buf[i] = '\t';
+			buf[i] = 0;
+			if (!WriteBuf(fp, buf, indent)) return qfalse;
 			if (fs->next)
 			{
-				if (fprintf(fp, "} //end case\n") < 0) return qfalse;
+				if (!WriteBuf(fp, "} //end case\n", 13)) return qfalse;
 			} //end if
 			else
 			{
-				if (fprintf(fp, "} //end default\n") < 0) return qfalse;
+				if (!WriteBuf(fp, "} //end default\n", 16)) return qfalse;
 			} //end else
 		} //end if
 		else
@@ -509,10 +563,12 @@ qboolean WriteFuzzySeperators_r(FILE *fp, fuzzyseperator_t *fs, int indent)
 		fs = fs->next;
 	} while(fs);
 	indent--;
-	if (!WriteIndent(fp, indent)) return qfalse;
-	if (fprintf(fp, "} //end switch\n") < 0) return qfalse;
+	for (i = 0; i < indent; i++) buf[i] = '\t';
+	buf[i] = 0;
+	if (!WriteBuf(fp, buf, indent)) return qfalse;
+	if (!WriteBuf(fp, "} //end switch\n", 15)) return qfalse;
 	return qtrue;
-} //end of the function WriteItemFuzzyWeights_r
+} //end of the function WriteFuzzySeperators_r
 //===========================================================================
 //
 // Parameter:				-
@@ -521,33 +577,48 @@ qboolean WriteFuzzySeperators_r(FILE *fp, fuzzyseperator_t *fs, int indent)
 //===========================================================================
 qboolean WriteWeightConfig(char *filename, weightconfig_t *config)
 {
-	int i;
-	FILE *fp;
+	int i, n;
+	char buf[WEIGHTWRITE_BUFSIZE];
+	fileHandle_t fp;
 	weight_t *ifw;
 
-	fp = fopen(filename, "wb");
-	if (!fp) return qfalse;
+	if (!filename || !filename[0] || !config) return qfalse;
+
+	//NOTE: botimport.FS_FOpenFile is FS_FOpenFileByMode which returns the
+	//file length for reads but 0/-1 for writes -> only check the handle
+	botimport.FS_FOpenFile(filename, &fp, FS_WRITE);
+	if (!fp)
+	{
+		botimport.Print(PRT_ERROR, "WriteWeightConfig: couldn't open %s for writing\n", filename);
+		return qfalse;
+	} //end if
 
 	for (i = 0; i < config->numweights; i++)
 	{
 		ifw = &config->weights[i];
-		if (fprintf(fp, "\nweight \"%s\"\n", ifw->name) < 0) return qfalse;
-		if (fprintf(fp, "{\n") < 0) return qfalse;
+		if (!ifw->name || !ifw->firstseperator) continue;
+		n = sprintf(buf, "\nweight \"%s\"\n", ifw->name);
+		if (!WriteBuf(fp, buf, n)) goto failed;
+		if (!WriteBuf(fp, "{\n", 2)) goto failed;
 		if (ifw->firstseperator->index > 0)
 		{
-			if (!WriteFuzzySeperators_r(fp, ifw->firstseperator, 1)) return qfalse;
+			if (!WriteFuzzySeperators_r(fp, ifw->firstseperator, 1)) goto failed;
 		} //end if
 		else
 		{
-			if (!WriteIndent(fp, 1)) return qfalse;
-			if (!WriteFuzzyWeight(fp, ifw->firstseperator)) return qfalse;
+			if (!WriteBuf(fp, "\t", 1)) goto failed;
+			if (!WriteFuzzyWeight(fp, ifw->firstseperator)) goto failed;
 		} //end else
-		if (fprintf(fp, "} //end weight\n") < 0) return qfalse;
+		if (!WriteBuf(fp, "} //end weight\n", 15)) goto failed;
 	} //end for
-	fclose(fp);
+	botimport.FS_FCloseFile(fp);
+	botimport.Print(PRT_MESSAGE, "WriteWeightConfig: wrote %s\n", filename);
 	return qtrue;
+failed:
+	botimport.FS_FCloseFile(fp);
+	botimport.Print(PRT_ERROR, "WriteWeightConfig: write error on %s\n", filename);
+	return qfalse;
 } //end of the function WriteWeightConfig
-#endif
 //===========================================================================
 //
 // Parameter:				-

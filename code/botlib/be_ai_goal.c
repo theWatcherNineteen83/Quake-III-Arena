@@ -241,8 +241,9 @@ void BotSaveGoalFuzzyLogic(int goalstate, char *filename)
 	bot_goalstate_t *gs;
 
 	gs = BotGoalStateFromHandle(goalstate);
-
-	//WriteWeightConfig(filename, gs->itemweightconfig);
+	if (!gs) return;
+	// 2026-10-15: reactivated (writer rewritten onto botimport FS API, see be_ai_weight.c)
+	WriteWeightConfig(filename, gs->itemweightconfig);
 } //end of the function BotSaveGoalFuzzyLogic
 //===========================================================================
 //
