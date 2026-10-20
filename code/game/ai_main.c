@@ -649,9 +649,20 @@ BotInterbreeding
 */
 void BotInterbreeding(void) {
 	int i;
+	char interbreedBuf[MAX_CVAR_VALUE_STRING];
 
 	trap_Cvar_Update(&bot_interbreedchar);
-	if (!strlen(bot_interbreedchar.string)) return;
+	// PATCH 2026-10-20: Fallback to engine cvar if vmCvar is empty.
+	// trap_Cvar_Update may not copy the value if modificationCount matches,
+	// or if the cvar was set before the game module registered it.
+	if (!strlen(bot_interbreedchar.string)) {
+		trap_Cvar_VariableStringBuffer("bot_interbreedchar", interbreedBuf, sizeof(interbreedBuf));
+		if (!strlen(interbreedBuf)) {
+			return;
+		}
+		// Copy the engine value into our vmCvar for subsequent use
+		Q_strncpyz(bot_interbreedchar.string, interbreedBuf, sizeof(bot_interbreedchar.string));
+	}
 	// PATCH 2026-10-20: support all gametypes (FFA, Tournament, Team, CTF)
 	// Original code forced GT_TOURNAMENT + ExitLevel which consumed bot_interbreedchar.
 	// Now we keep the current gametype and just respawn bots for interbreeding.

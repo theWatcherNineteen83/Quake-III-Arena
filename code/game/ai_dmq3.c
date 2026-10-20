@@ -496,6 +496,28 @@ void BotCTFSeekGoals(bot_state_t *bs) {
 	vec3_t dir;
 	aas_entityinfo_t entinfo;
 
+	// PATCH 2026-10-20: Check for enemies in CTF mode.
+	// Original code never called BotFindEnemy in CTF, so bots never
+	// actively engaged enemies — they only pursued flag objectives.
+	if (bs->enemy < 0) {
+		BotFindEnemy(bs, -1);
+	}
+	if (bs->enemy >= 0) {
+		// If we found an enemy, engage them briefly before continuing CTF objectives.
+		// This allows bots to defend themselves and attack nearby threats.
+		BotEntityInfo(bs->enemy, &entinfo);
+		if (!entinfo.valid || EntityIsDead(&entinfo) || BotSameTeam(bs, bs->enemy)) {
+			bs->enemy = -1;
+		} else {
+			// Attack the enemy if visible and close enough
+			float dist = Distance(bs->origin, entinfo.origin);
+			if (dist < 800 && BotEntityVisible(bs->entitynum, bs->eye, bs->viewangles, 90, bs->enemy) > 0) {
+				BotAimAtEnemy(bs);
+				BotCheckAttack(bs);
+			}
+		}
+	}
+
 	//when carrying a flag in ctf the bot should rush to the base
 	if (BotCTFCarryingFlag(bs)) {
 		//if not already rushing to the base
@@ -774,6 +796,24 @@ BotCTFRetreatGoals
 ==================
 */
 void BotCTFRetreatGoals(bot_state_t *bs) {
+	// PATCH 2026-10-20: Check for enemies during CTF retreat.
+	if (bs->enemy < 0) {
+		BotFindEnemy(bs, -1);
+	}
+	if (bs->enemy >= 0) {
+		aas_entityinfo_t entinfo;
+		BotEntityInfo(bs->enemy, &entinfo);
+		if (!entinfo.valid || EntityIsDead(&entinfo) || BotSameTeam(bs, bs->enemy)) {
+			bs->enemy = -1;
+		} else {
+			float dist = Distance(bs->origin, entinfo.origin);
+			if (dist < 800 && BotEntityVisible(bs->entitynum, bs->eye, bs->viewangles, 90, bs->enemy) > 0) {
+				BotAimAtEnemy(bs);
+				BotCheckAttack(bs);
+			}
+		}
+	}
+
 	//when carrying a flag in ctf the bot should rush to the base
 	if (BotCTFCarryingFlag(bs)) {
 		//if not already rushing to the base
