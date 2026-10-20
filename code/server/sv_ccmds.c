@@ -194,9 +194,8 @@ static void SV_Map_f( void ) {
 	// then cheats will be allowed
 	if ( cheat ) {
 		Cvar_Set( "sv_cheats", "1" );
-	} else {
-		Cvar_Set( "sv_cheats", "0" );
 	}
+	// PATCH: removed forced sv_cheats=0 on normal map load
 }
 
 /*
