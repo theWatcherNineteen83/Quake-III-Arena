@@ -1647,10 +1647,10 @@ int BotAISetup( int restart ) {
 	trap_Cvar_Register(&bot_testsolid, "bot_testsolid", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_testclusters, "bot_testclusters", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_developer, "bot_developer", "0", CVAR_CHEAT);
-	trap_Cvar_Register(&bot_interbreedchar, "bot_interbreedchar", "", 0);
-	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "10", 0);
+	trap_Cvar_Register(&bot_interbreedchar, "bot_interbreedchar", "", CVAR_SYSTEMINFO);
+	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "10", CVAR_SYSTEMINFO);
 	trap_Cvar_Register(&bot_interbreedcycle, "bot_interbreedcycle", "20", 0);
-	trap_Cvar_Register(&bot_interbreedwrite, "bot_interbreedwrite", "", 0);
+	trap_Cvar_Register(&bot_interbreedwrite, "bot_interbreedwrite", "", CVAR_SYSTEMINFO);
 
 	//if the game is restarted for a tournament
 	if (restart) {
