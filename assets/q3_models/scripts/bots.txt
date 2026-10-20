@@ -1,0 +1,23 @@
+{
+name		Cortana
+funname		Cortana
+model		cortana
+headmodel	cortana
+aifile		bots/custom/cortana_c.c
+}
+
+{
+name		EDI
+funname		EDI
+model		edi
+headmodel	edi
+aifile		bots/custom/edi_c.c
+}
+
+{
+name		Dog
+funname		Dog
+model		dog
+headmodel	dog
+aifile		bots/custom/dog_c.c
+}
