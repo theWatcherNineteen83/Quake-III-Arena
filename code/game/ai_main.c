@@ -1650,9 +1650,9 @@ int BotAISetup( int restart ) {
 	trap_Cvar_Register(&bot_testclusters, "bot_testclusters", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_developer, "bot_developer", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_interbreedchar, "bot_interbreedchar", "grunt", CVAR_SYSTEMINFO);
-	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "10", CVAR_SYSTEMINFO);
-	trap_Cvar_Register(&bot_interbreedcycle, "bot_interbreedcycle", "20", 0);
-	trap_Cvar_Register(&bot_interbreedwrite, "bot_interbreedwrite", "", CVAR_SYSTEMINFO);
+	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "4", CVAR_SYSTEMINFO);
+	trap_Cvar_Register(&bot_interbreedcycle, "bot_interbreedcycle", "1", CVAR_SYSTEMINFO);
+	trap_Cvar_Register(&bot_interbreedwrite, "bot_interbreedwrite", "/home/prometheus/q3home/baseq3/bots/evolved_grunt.c", CVAR_SYSTEMINFO);
 
 	//if the game is restarted for a tournament
 	if (restart) {

@@ -416,15 +416,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	G_RegisterCvars();
 
-	// PATCH 2026-10-20: Force-set interbreeding cvars after registration.
-	// Engine sv_bot.c registers these with defaults, but trap_Cvar_Register
-	// in ai_main.c overrides them. Setting here after all registrations
-	// ensures values stick regardless of registration order.
-	trap_Cvar_Set("bot_interbreedchar", "grunt");
-	trap_Cvar_Set("bot_interbreedbots", "4");
-	trap_Cvar_Set("bot_interbreedcycle", "1");
-	trap_Cvar_Set("bot_interbreedwrite", "/home/prometheus/q3home/baseq3/bots/evolved_grunt.c");
-
 	G_ProcessIPBans();
 
 	G_InitMemory();
