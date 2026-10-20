@@ -629,6 +629,10 @@ add link back into ExitLevel?
 void BotInterbreedEndMatch(void) {
 
 	if (!bot_interbreed) return;
+	// PATCH 2026-10-20: Update cvars before checking cycle count.
+	// Without trap_Cvar_Update, bot_interbreedcycle.integer may still be 0
+	// (uninitialized vmCvar) even though the engine cvar is set to "1".
+	trap_Cvar_Update(&bot_interbreedcycle);
 	bot_interbreedmatchcount++;
 	if (bot_interbreedmatchcount >= bot_interbreedcycle.integer) {
 		bot_interbreedmatchcount = 0;
