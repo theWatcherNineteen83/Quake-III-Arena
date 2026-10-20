@@ -597,7 +597,7 @@ void BotWriteInterbreeded(char *filename) {
 	float rank, bestrank;
 	int i, bestbot;
 
-	bestrank = 0;
+	bestrank = -999;
 	bestbot = -1;
 	// get the best bot
 	for (i = 0; i < MAX_CLIENTS; i++) {
@@ -605,16 +605,21 @@ void BotWriteInterbreeded(char *filename) {
 			rank = botstates[i]->num_kills * 2 - botstates[i]->num_deaths;
 		}
 		else {
-			rank = -1;
+			rank = -999;
 		}
 		if (rank > bestrank) {
 			bestrank = rank;
 			bestbot = i;
 		}
 	}
+	G_Printf("DEBUG-WRITE: bestbot=%d bestrank=%.1f filename=[%s]\n", bestbot, bestrank, filename);
 	if (bestbot >= 0) {
+		G_Printf("DEBUG-WRITE: calling BotSaveGoalFuzzyLogic with gs=%p\n", botstates[bestbot]->gs);
 		//write out the new goal fuzzy logic
 		trap_BotSaveGoalFuzzyLogic(botstates[bestbot]->gs, filename);
+		G_Printf("DEBUG-WRITE: BotSaveGoalFuzzyLogic returned\n");
+	} else {
+		G_Printf("DEBUG-WRITE: NO BEST BOT FOUND - skipping write\n");
 	}
 }
 
@@ -627,7 +632,11 @@ add link back into ExitLevel?
 */
 void BotInterbreedEndMatch(void) {
 
-	if (!bot_interbreed) return;
+	G_Printf("DEBUG-ENDMATCH: called, bot_interbreed=%d\n", bot_interbreed);
+	if (!bot_interbreed) {
+		G_Printf("DEBUG-ENDMATCH: EARLY RETURN - bot_interbreed is false\n");
+		return;
+	}
 	// PATCH 2026-10-20: Update cvars before checking cycle count.
 	// Without trap_Cvar_Update, bot_interbreedcycle.integer may still be 0
 	// (uninitialized vmCvar) even though the engine cvar is set to "1".
@@ -637,8 +646,11 @@ void BotInterbreedEndMatch(void) {
 		bot_interbreedmatchcount = 0;
 		//
 		trap_Cvar_Update(&bot_interbreedwrite);
+		G_Printf("DEBUG-ENDMATCH: cycle reached, bot_interbreedwrite=[%s]\n", bot_interbreedwrite.string);
 		if (strlen(bot_interbreedwrite.string)) {
+			G_Printf("DEBUG-ENDMATCH: Writing to %s\n", bot_interbreedwrite.string);
 			BotWriteInterbreeded(bot_interbreedwrite.string);
+			G_Printf("DEBUG-ENDMATCH: Write complete\n");
 			trap_Cvar_Set("bot_interbreedwrite", "");
 		}
 		BotInterbreedBots();
