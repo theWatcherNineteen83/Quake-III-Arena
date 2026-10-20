@@ -668,8 +668,10 @@ void BotInterbreeding(void) {
 		trap_SendConsoleCommand( EXEC_INSERT, va("addbot %s 4 free %i %s%d\n",
 						bot_interbreedchar.string, i * 50, bot_interbreedchar.string, i) );
 	}
-	//
-	trap_Cvar_Set("bot_interbreedchar", "");
+	// PATCH 2026-10-20: Do NOT reset bot_interbreedchar here.
+	// Original code used one-shot mechanism (set char -> trigger -> clear).
+	// With bot_interbreedcycle, we want repeated interbreeding cycles.
+	// trap_Cvar_Set("bot_interbreedchar", ""); // DISABLED for multi-cycle support
 	bot_interbreed = qtrue;
 }
 
