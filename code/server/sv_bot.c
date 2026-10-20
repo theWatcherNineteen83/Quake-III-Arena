@@ -504,10 +504,13 @@ void SV_BotInitCvars(void) {
 	Cvar_Get("bot_rocketjump", "1", 0);					//enable rocket jumping
 	Cvar_Get("bot_challenge", "0", 0);					//challenging bot
 	Cvar_Get("bot_minplayers", "0", 0);					//minimum players in a team or the game
-	Cvar_Get("bot_interbreedchar", "grunt", 0);		//bot character used for interbreeding
-	Cvar_Get("bot_interbreedbots", "4", 0);	//number of bots used for interbreeding
-	Cvar_Get("bot_interbreedcycle", "1", 0);	//bot interbreeding cycle
-	Cvar_Get("bot_interbreedwrite", "/home/prometheus/q3home/baseq3/bots/evolved_grunt.c", 0);	//write interbreeded bots to this file
+	// PATCH 2026-10-20: Add CVAR_SYSTEMINFO so game module (VM) can read these cvars.
+	// Without CVAR_SYSTEMINFO, trap_Cvar_Update/trap_Cvar_VariableStringBuffer
+	// cannot access them from the game VM, causing BotInterbreeding() to never fire.
+	Cvar_Get("bot_interbreedchar", "grunt", CVAR_SYSTEMINFO);		//bot character used for interbreeding
+	Cvar_Get("bot_interbreedbots", "4", CVAR_SYSTEMINFO);	//number of bots used for interbreeding
+	Cvar_Get("bot_interbreedcycle", "1", CVAR_SYSTEMINFO);	//bot interbreeding cycle
+	Cvar_Get("bot_interbreedwrite", "/home/prometheus/q3home/baseq3/bots/evolved_grunt.c", CVAR_SYSTEMINFO);	//write interbreeded bots to this file
 }
 
 /*
