@@ -639,6 +639,10 @@ void BotInterbreedEndMatch(void) {
 			trap_Cvar_Set("bot_interbreedwrite", "");
 		}
 		BotInterbreedBots();
+		// PATCH 2026-10-20: Reset bot_interbreed so next cycle can start.
+		// Without this, the guard in BotInterbreeding() prevents re-entry
+		// forever after the first cycle.
+		bot_interbreed = qfalse;
 	}
 }
 
@@ -650,6 +654,12 @@ BotInterbreeding
 void BotInterbreeding(void) {
 	int i;
 	char interbreedBuf[MAX_CVAR_VALUE_STRING];
+
+	// PATCH 2026-10-20: Only run once per interbreeding cycle.
+	// Without this guard, BotInterbreeding fires every frame while
+	// bot_interbreedchar is set, constantly respawning bots and
+	// preventing matches from ever completing.
+	if (bot_interbreed) return;
 
 	trap_Cvar_Update(&bot_interbreedchar);
 	// PATCH 2026-10-20: Fallback to engine cvar if vmCvar is empty.
