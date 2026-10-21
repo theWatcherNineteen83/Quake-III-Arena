@@ -1440,6 +1440,11 @@ void BotResetState(bot_state_t *bs) {
 	chatstate = bs->cs;
 	weaponstate = bs->ws;
 	entergame_time = bs->entergame_time;
+	// PATCH 2026-10-21: preserve evolution stats across respawns.
+	// Without this, BotResetState's memset zeroes num_kills/num_deaths
+	// every time a bot respawns, so they never accumulate.
+	int saved_num_kills = bs->num_kills;
+	int saved_num_deaths = bs->num_deaths;
 	//free checkpoints and patrol points
 	BotFreeWaypoints(bs->checkpoints);
 	BotFreeWaypoints(bs->patrolpoints);
@@ -1457,6 +1462,9 @@ void BotResetState(bot_state_t *bs) {
 	bs->entitynum = entitynum;
 	bs->character = character;
 	bs->entergame_time = entergame_time;
+	// PATCH 2026-10-21: restore evolution stats after memset.
+	bs->num_kills = saved_num_kills;
+	bs->num_deaths = saved_num_deaths;
 	//reset several states
 	if (bs->ms) trap_BotResetMoveState(bs->ms);
 	if (bs->gs) trap_BotResetGoalState(bs->gs);
