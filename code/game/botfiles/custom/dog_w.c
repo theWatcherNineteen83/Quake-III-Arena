@@ -1,17 +1,25 @@
-#include "game/botlib.h"
+//===========================================================================
+//
+// Name:			dog_w.c
+// Function:		
+// Programmer:		
+// Last update:		
+// Tab Size:		4 (real tabs)
+//===========================================================================
 
-bot_weaponstate_t botweaponstate_dog = {
-	{
-		{"W_GAUNTLET",			"80"},
-		{"W_SHOTGUN",			"70"},
-		{"W_MACHINEGUN",		"35"},
-		{"W_GRENADELAUNCHER",	"55"},
-		{"W_ROCKETLAUNCHER",	"85"},
-		{"W_RAILGUN",			"100"},
-		{"W_BFG10K",			"90"},
-		{"W_LIGHTNING",			"40"},
-		{"W_PLASMAGUN",			"35"},
-		{"W_GRAPPLE",			"20"},
-		{NULL, NULL}
-	}
-};
+
+#include "inv.h"
+
+#define W_GAUNTLET				10
+#define W_SHOTGUN				30
+#define W_MACHINEGUN			20
+#define W_GRENADELAUNCHER		40
+#define W_ROCKETLAUNCHER		100
+#define W_RAILGUN				370
+#define W_BFG10K				95
+#define W_LIGHTNING				80
+#define W_PLASMAGUN				75
+#define W_GRAPPLE				15
+
+//
+#include "fw_weap.c"
