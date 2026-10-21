@@ -601,37 +601,15 @@ stats without needing the full bot_state_t layout (avoids LTO mismatch).
 ==============
 */
 void BotTrackKill( int clientNum ) {
-	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) {
-		G_Printf("TRACK_KILL: SKIP clientNum=%d (out of range)\n", clientNum);
-		return;
-	}
-	if ( !botstates[clientNum] ) {
-		G_Printf("TRACK_KILL: SKIP clientNum=%d (botstates NULL)\n", clientNum);
-		return;
-	}
-	if ( !botstates[clientNum]->inuse ) {
-		G_Printf("TRACK_KILL: SKIP clientNum=%d (not inuse)\n", clientNum);
-		return;
-	}
+	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) return;
+	if ( !botstates[clientNum] || !botstates[clientNum]->inuse ) return;
 	botstates[clientNum]->num_kills++;
-	G_Printf("TRACK_KILL: OK clientNum=%d kills=%d\n", clientNum, botstates[clientNum]->num_kills);
 }
 
 void BotTrackDeath( int clientNum ) {
-	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) {
-		G_Printf("TRACK_DEATH: SKIP clientNum=%d (out of range)\n", clientNum);
-		return;
-	}
-	if ( !botstates[clientNum] ) {
-		G_Printf("TRACK_DEATH: SKIP clientNum=%d (botstates NULL)\n", clientNum);
-		return;
-	}
-	if ( !botstates[clientNum]->inuse ) {
-		G_Printf("TRACK_DEATH: SKIP clientNum=%d (not inuse)\n", clientNum);
-		return;
-	}
+	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) return;
+	if ( !botstates[clientNum] || !botstates[clientNum]->inuse ) return;
 	botstates[clientNum]->num_deaths++;
-	G_Printf("TRACK_DEATH: OK clientNum=%d deaths=%d\n", clientNum, botstates[clientNum]->num_deaths);
 }
 
 /*
