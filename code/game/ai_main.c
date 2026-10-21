@@ -593,13 +593,42 @@ void BotInterbreedBots(void) {
 BotWriteInterbreeded
 ==============
 */
+/*
+==============
+BotWriteAllEvolved
+Writes evolved goal fuzzy logic for ALL active bots.
+Each bot gets its own file: <basepath>/evolved_<name>.c
+==============
+*/
+void BotWriteAllEvolved(void) {
+	int i;
+	char filename[MAX_QPATH];
+	char name[MAX_NETNAME];
+
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		if (botstates[i] && botstates[i]->inuse) {
+			ClientName(i, name, sizeof(name));
+			if (!strlen(name)) continue;
+			Com_sprintf(filename, sizeof(filename), "bots/evolved_%s.c", name);
+			G_Printf("EVOLVE: writing %s (kills=%d deaths=%d)\n",
+				filename, botstates[i]->num_kills, botstates[i]->num_deaths);
+			trap_BotSaveGoalFuzzyLogic(botstates[i]->gs, filename);
+		}
+	}
+}
+
+/*
+==============
+BotWriteInterbreeded
+Legacy single-file write. Kept for backward compat with bot_interbreedwrite cvar.
+==============
+*/
 void BotWriteInterbreeded(char *filename) {
 	float rank, bestrank;
 	int i, bestbot;
 
 	bestrank = -999;
 	bestbot = -1;
-	// get the best bot
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		if ( botstates[i] && botstates[i]->inuse ) {
 			rank = botstates[i]->num_kills * 2 - botstates[i]->num_deaths;
@@ -612,14 +641,8 @@ void BotWriteInterbreeded(char *filename) {
 			bestbot = i;
 		}
 	}
-	G_Printf("DEBUG-WRITE: bestbot=%d bestrank=%.1f filename=[%s]\n", bestbot, bestrank, filename);
 	if (bestbot >= 0) {
-		G_Printf("DEBUG-WRITE: calling BotSaveGoalFuzzyLogic with gs=%p\n", botstates[bestbot]->gs);
-		//write out the new goal fuzzy logic
 		trap_BotSaveGoalFuzzyLogic(botstates[bestbot]->gs, filename);
-		G_Printf("DEBUG-WRITE: BotSaveGoalFuzzyLogic returned\n");
-	} else {
-		G_Printf("DEBUG-WRITE: NO BEST BOT FOUND - skipping write\n");
 	}
 }
 
@@ -632,9 +655,7 @@ add link back into ExitLevel?
 */
 void BotInterbreedEndMatch(void) {
 
-	G_Printf("DEBUG-ENDMATCH: called, bot_interbreed=%d\n", bot_interbreed);
 	if (!bot_interbreed) {
-		G_Printf("DEBUG-ENDMATCH: EARLY RETURN - bot_interbreed is false\n");
 		return;
 	}
 	// PATCH 2026-10-20: Update cvars before checking cycle count.
@@ -646,11 +667,11 @@ void BotInterbreedEndMatch(void) {
 		bot_interbreedmatchcount = 0;
 		//
 		trap_Cvar_Update(&bot_interbreedwrite);
-		G_Printf("DEBUG-ENDMATCH: cycle reached, bot_interbreedwrite=[%s]\n", bot_interbreedwrite.string);
+		// Always write per-bot evolved files
+		BotWriteAllEvolved();
+		// Legacy single-file write if cvar is set
 		if (strlen(bot_interbreedwrite.string)) {
-			G_Printf("DEBUG-ENDMATCH: Writing to %s\n", bot_interbreedwrite.string);
 			BotWriteInterbreeded(bot_interbreedwrite.string);
-			G_Printf("DEBUG-ENDMATCH: Write complete\n");
 			trap_Cvar_Set("bot_interbreedwrite", "");
 		}
 		BotInterbreedBots();
@@ -699,7 +720,7 @@ void BotInterbreeding(void) {
 	// Force reload of character configs for next bot spawn
 	trap_BotLibVarSet("bot_reloadcharacters", "1");
 	bot_interbreed = qtrue;
-	G_Printf("BotInterbreeding: activated for char [%s], %d bots, cycle %d\n",
+	G_Printf("LEARN: interbreeding activated for [%s], %d bots, cycle %d\n",
 		bot_interbreedchar.string, bot_interbreedbots.integer, bot_interbreedcycle.integer);
 }
 
@@ -1699,7 +1720,7 @@ int BotAISetup( int restart ) {
 	trap_Cvar_Register(&bot_testsolid, "bot_testsolid", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_testclusters, "bot_testclusters", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_developer, "bot_developer", "0", CVAR_CHEAT);
-	trap_Cvar_Register(&bot_interbreedchar, "bot_interbreedchar", "grunt", CVAR_SYSTEMINFO);
+	trap_Cvar_Register(&bot_interbreedchar, "bot_interbreedchar", "all", CVAR_SYSTEMINFO);
 	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "4", CVAR_SYSTEMINFO);
 	trap_Cvar_Register(&bot_interbreedcycle, "bot_interbreedcycle", "1", CVAR_SYSTEMINFO);
 	trap_Cvar_Register(&bot_interbreedwrite, "bot_interbreedwrite", "/home/prometheus/q3home/baseq3/bots/evolved_grunt.c", CVAR_SYSTEMINFO);
