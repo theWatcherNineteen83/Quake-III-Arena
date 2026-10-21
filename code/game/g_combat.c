@@ -24,6 +24,52 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "g_local.h"
 
+// PATCH 2026-10-21: direct bot kill/death tracking for evolution stats.
+// EV_OBITUARY is a one-frame temp entity, so bots missed it and
+// num_kills/num_deaths stayed 0. We increment the counters directly in
+// player_die(). ai_main.h cannot be included here (no include guards +
+// botlib type dependencies), so we use the same layout-pinning trick that
+// bg_public.h uses for the opaque bot handles: re-declare ONLY the struct
+// prefix up to num_kills; the rest of the real struct is never accessed
+// through this partial type. Keep in sync with ai_main.h!
+typedef struct bot_state_s
+{
+	int inuse;											// 0
+	int botthink_residual;							// 4
+	int client;											// 8
+	int entitynum;									// 12
+	playerState_t cur_ps;							// 16
+	int last_eFlags;
+	usercmd_t lastucmd;
+	int entityeventTime[1024];
+	bot_settings_t settings;
+	int (*ainode)(struct bot_state_s *bs);
+	float thinktime;
+	vec3_t origin;
+	vec3_t velocity;
+	int presencetype;
+	vec3_t eye;
+	int areanum;
+	int inventory[MAX_ITEMS];
+	int tfl;
+	int flags;
+	int respawn_wait;
+	int lasthealth;
+	int lastkilledplayer;
+	int lastkilledby;
+	int botdeathtype;
+	int enemydeathtype;
+	int botsuicide;
+	int enemysuicide;
+	int setupcount;
+	int map_restart;
+	int entergamechat;
+	int num_deaths;									// must match ai_main.h
+	int num_kills;									// must match ai_main.h
+} bot_state_t;
+
+extern bot_state_t *botstates[MAX_CLIENTS];
+
 
 /*
 ============
@@ -506,6 +552,19 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->enemy = attacker;
 
 	self->client->ps.persistant[PERS_KILLED]++;
+
+	// PATCH 2026-10-21: directly update bot evolution stats (kills=0 fix).
+	// Do this here instead of relying on EV_OBITUARY event pickup.
+	if ( attacker && attacker->client
+		&& attacker->s.number >= 0 && attacker->s.number < MAX_CLIENTS
+		&& botstates[attacker->s.number] && botstates[attacker->s.number]->inuse
+		&& attacker != self && !OnSameTeam( self, attacker ) ) {
+		botstates[attacker->s.number]->num_kills++;
+	}
+	if ( self->s.number >= 0 && self->s.number < MAX_CLIENTS
+		&& botstates[self->s.number] && botstates[self->s.number]->inuse ) {
+		botstates[self->s.number]->num_deaths++;
+	}
 
 	if (attacker && attacker->client) {
 		attacker->client->lastkilled_client = self->s.number;

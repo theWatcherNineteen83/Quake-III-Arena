@@ -605,6 +605,18 @@ void BotWriteAllEvolved(void) {
 	char filename[MAX_QPATH];
 	char name[MAX_NETNAME];
 
+	// DEBUG: dump all bot states before writing
+	G_Printf("EVOLVE: === Pre-write debug dump ===\n");
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		if (botstates[i] && botstates[i]->inuse) {
+			ClientName(i, name, sizeof(name));
+			G_Printf("EVOLVE: slot %d name='%s' kills=%d deaths=%d client=%d\n",
+				i, name, botstates[i]->num_kills, botstates[i]->num_deaths,
+				botstates[i]->client);
+		}
+	}
+	G_Printf("EVOLVE: === End debug dump ===\n");
+
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		if (botstates[i] && botstates[i]->inuse) {
 			ClientName(i, name, sizeof(name));
@@ -1721,7 +1733,7 @@ int BotAISetup( int restart ) {
 	trap_Cvar_Register(&bot_testclusters, "bot_testclusters", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_developer, "bot_developer", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_interbreedchar, "bot_interbreedchar", "all", CVAR_SYSTEMINFO);
-	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "4", CVAR_SYSTEMINFO);
+	trap_Cvar_Register(&bot_interbreedbots, "bot_interbreedbots", "8", CVAR_SYSTEMINFO);
 	trap_Cvar_Register(&bot_interbreedcycle, "bot_interbreedcycle", "1", CVAR_SYSTEMINFO);
 	trap_Cvar_Register(&bot_interbreedwrite, "bot_interbreedwrite", "/home/prometheus/q3home/baseq3/bots/evolved_grunt.c", CVAR_SYSTEMINFO);
 
