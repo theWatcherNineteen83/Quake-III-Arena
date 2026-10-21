@@ -595,6 +595,25 @@ BotWriteInterbreeded
 */
 /*
 ==============
+BotTrackKill / BotTrackDeath
+PATCH 2026-10-21: exported helpers so g_combat.c can update bot evolution
+stats without needing the full bot_state_t layout (avoids LTO mismatch).
+==============
+*/
+void BotTrackKill( int clientNum ) {
+	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) return;
+	if ( !botstates[clientNum] || !botstates[clientNum]->inuse ) return;
+	botstates[clientNum]->num_kills++;
+}
+
+void BotTrackDeath( int clientNum ) {
+	if ( clientNum < 0 || clientNum >= MAX_CLIENTS ) return;
+	if ( !botstates[clientNum] || !botstates[clientNum]->inuse ) return;
+	botstates[clientNum]->num_deaths++;
+}
+
+/*
+==============
 BotWriteAllEvolved
 Writes evolved goal fuzzy logic for ALL active bots.
 Each bot gets its own file: <basepath>/evolved_<name>.c
